@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Ambiental</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #38bdf8;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            color: #7dd3fc;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #475569;
+            border-radius: 8px;
+            background: #0f172a;
+            color: white;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+        }
+
+        .btn-enviar {
+            background: #06b6d4;
+            color: white;
+        }
+
+        .btn-enviar:hover {
+            background: #0891b2;
+        }
+
+        .btn-atualizar {
+            background: #22c55e;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .btn-atualizar:hover {
+            background: #16a34a;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+
+        thead {
+            background: #38bdf8;
+            color: #0f172a;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        tbody tr {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+        }
+
+        tbody tr:hover {
+            background: #334155;
+        }
+
+        .status {
+            margin-top: 10px;
+            text-align: center;
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🌎 Painel de Monitoramento Ambiental</h1>
+
+        <div class="card">
+            <h3>📡 Nova Leitura</h3>
+
+            <input 
+                type="text" 
+                id="sensor" 
+                placeholder="Digite o tipo do sensor (Ex: Água, Ar, Temperatura)"
+            >
+
+            <input 
+                type="number" 
+                id="valor" 
+                placeholder="Digite o valor da leitura"
+            >
+
+            <button class="btn-enviar" onclick="enviarDados()">
+                Enviar Dados
+            </button>
+
+            <div class="status" id="status"></div>
+        </div>
+
+        <div class="card">
+            <h3>📊 Histórico de Leituras</h3>
+
+            <button class="btn-atualizar" onclick="atualizarTabela()">
+                Atualizar Histórico
+            </button>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Sensor</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tabela-corpo"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+
+        const API_URL = 'http://localhost:3000';
+
+        async function enviarDados() {
+
+            const sensor = document.getElementById('sensor').value;
+            const valor = document.getElementById('valor').value;
+            const status = document.getElementById('status');
+
+            if (!sensor || !valor) {
+                status.style.color = '#f87171';
+                status.innerText = 'Preencha todos os campos.';
+                return;
+            }
+
+            try {
+
+                await fetch(`${API_URL}/coleta`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sensor, valor })
+                });
+
+                status.style.color = '#4ade80';
+                status.innerText = 'Dados enviados com sucesso!';
+
+                document.getElementById('sensor').value = '';
+                document.getElementById('valor').value = '';
+
+                atualizarTabela();
+
+            } catch (erro) {
+
+                status.style.color = '#f87171';
+                status.innerText = 'Erro ao enviar dados.';
+            }
+        }
+
+        async function atualizarTabela() {
+
+            try {
+
+                const response = await fetch(`${API_URL}/historico`);
+
+                const dados = await response.json();
+
+                const corpo = document.getElementById('tabela-corpo');
+
+                corpo.innerHTML = dados.map(item => `
+                    <tr>
+                        <td>${new Date(item.data).toLocaleString()}</td>
+                        <td>${item.sensor}</td>
+                        <td>${item.valor}</td>
+                    </tr>
+                `).join('');
+
+            } catch (erro) {
+
+                console.error('Erro ao atualizar tabela:', erro);
+            }
+        }
+
+        // Atualiza automaticamente ao abrir
+        atualizarTabela();
+
+    </script>
+
+</body>
+</html>
